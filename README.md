@@ -1,6 +1,11 @@
 Generate audio file for a guided visualization of a freedive.
 
-For example.
+## Install
+```
+pip install git+https://github.com/djaney/imagine-freediving.git
+```
+
+## Example
 - 30m depth
 - charge at 10
 - freefall at 20
