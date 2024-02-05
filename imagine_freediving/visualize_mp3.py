@@ -12,7 +12,7 @@ def main():
         epilog='Text at the bottom of help')
 
     parser.add_argument('filename', help="file name with .mp3")
-    parser.add_argument('targe_depth', type=int, help="Target depth in meters")
+    parser.add_argument('target_depth', type=int, help="Target depth in meters")
     parser.add_argument('descent_rate', type=float, help="Descent rate in positive meters per second")
     parser.add_argument('ascent_rate', type=float, help="Ascent rate in positive meters per second")
     parser.add_argument('--charge', type=float, help="Depth to charge mouthfill")
@@ -22,7 +22,7 @@ def main():
 
     assert args.filename[-4:] == ".mp3", "file should be mp3"
 
-    dive = Dive.generate(args.targe_depth, args.descent_rate, args.ascent_rate)
+    dive = Dive.generate(args.target_depth, args.descent_rate, args.ascent_rate)
     dive.annotate_by_meters(0, "dive")
     if args.charge:
         dive.annotate_by_meters(args.charge, "charge")
