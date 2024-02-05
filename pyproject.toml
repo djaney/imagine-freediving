@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "imagine-freediving"
+version = "0.1.0"
+description = ""
+authors = ["Djane Rey Mabelin <thedjaney@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+freediving = { git = "git@github.com:djaney/freedive.git", tag="v0.1.0"}
+gtts = "^2.5.1"
+pydub = "^0.25.1"
+
+[tool.poetry.scripts]
+freedive-visualize-mp3 = { reference = "imagine_freediving.visualize_mp3:main", type = "console" }
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
