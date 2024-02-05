@@ -1,16 +1,19 @@
 from freediving import Dive
 from gtts import gTTS
 from pydub import AudioSegment
+from moviepy.editor import VideoFileClip, AudioFileClip, CompositeAudioClip
 import os
 import tempfile
 import argparse
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Generate audio file for a guided visualization of a freedive')
+        description='Generate video file for a guided visualization of a freedive')
 
-    parser.add_argument('filename', help="file name with .mp3")
+    parser.add_argument('filename', help="file name with .mp4")
     parser.add_argument('target_depth', type=int, help="Target depth in meters")
     parser.add_argument('descent_rate', type=float, help="Descent rate in positive meters per second")
     parser.add_argument('ascent_rate', type=float, help="Ascent rate in positive meters per second")
@@ -19,7 +22,7 @@ def main():
     parser.add_argument('--float', type=float, help="Depth to let neutral buoyancy take over")
     args = parser.parse_args()
 
-    assert args.filename[-4:] == ".mp3", "file should be mp3"
+    assert args.filename[-4:] == ".mp4", "file should be mp4"
 
     dive = Dive.generate(args.target_depth, args.descent_rate, args.ascent_rate)
     dive.annotate_by_meters(0, "dive")
@@ -33,7 +36,30 @@ def main():
     dive.peak_to_annotation("grab tag and turn")
     x_points, y_points, annotations = dive.get_plot_data()
 
+
     with tempfile.TemporaryDirectory() as tmp_dir:
+
+        video_path = f"{tmp_dir}/video.mp4"
+        audio_path = f"{tmp_dir}/audio.mp3"
+
+        # generate video
+        fig = plt.figure()
+        ax = fig.add_axes([0, 0, 1, 1])
+        ax.fill_between(x_points, y_points, alpha=1)
+        ax.fill_between(x_points[:0], y_points[:0], alpha=0.7)
+
+        for a in annotations:
+            ax.annotate(*a)
+
+        def animate(i):
+            ax.clear()
+            ax.fill_between(x_points, y_points, alpha=1)
+            ax.fill_between(x_points[:i], y_points[:i], alpha=0.7)
+            for a in annotations:
+                ax.annotate(*a)
+
+        ani = animation.FuncAnimation(fig, animate, frames=len(x_points), interval=1000)
+        ani.save(video_path)
 
         # create sound files
         audio_segments = {}
@@ -56,7 +82,12 @@ def main():
             main_audio += audio_segments[text]
             current_time = main_audio.duration_seconds
 
-        main_audio.export(f"{args.filename}", format="mp3")
+        main_audio.export(audio_path, format="mp3")
+
+        video = VideoFileClip(video_path)
+        audio = AudioFileClip(audio_path)
+        video = video.set_audio(audio)
+        video.write_videofile(args.filename)
 
 
 if __name__ == "__main__":
