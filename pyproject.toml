@@ -7,15 +7,14 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-freediving = { git = "git@github.com:djaney/freedive.git", tag="v0.1.0"}
+freediving = { git = "git@github.com:djaney/freedive.git", tag="v0.2.0"}
 gtts = "^2.5.1"
 pydub = "^0.25.1"
-matplotlib = "~3.7.4"
 moviepy = "^1.0.3"
+pillow = "^10.2.0"
 
 [tool.poetry.scripts]
-freedive-visualize-mp3 = { reference = "imagine_freediving.visualize_mp3:main", type = "console" }
-freedive-visualize-mp4 = { reference = "imagine_freediving.visualize_mp4:main", type = "console" }
+freedive-visualize = { reference = "imagine_freediving.visualize:main", type = "console" }
 
 
 [build-system]

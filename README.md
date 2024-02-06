@@ -13,10 +13,5 @@ pip install git+https://github.com/djaney/imagine-freediving.git
 
 Generate audio
 ```
-freedive-visualize-mp3 30m.mp3 30 1 1 --charge 10 --freefall 20
-```
-
-Generate video
-```
-freedive-visualize-mp4 30m.mp3 30 1 1 --charge 10 --freefall 20
+freedive-visualize 30m.mp4 --generate 30 1 1 --charge 10 --freefall 20
 ```
