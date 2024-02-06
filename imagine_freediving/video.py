@@ -24,6 +24,8 @@ def generate_video(size, x_points, y_points, annotations, theme, fps):
     ])
     # adjust position based on size
     overlay_clip = overlay_clip.set_position((0, h-oh))
+    # set to be transparent
+    overlay_clip = overlay_clip.set_opacity(0.6)
 
     main_clip = CompositeVideoClip([
         background_clip,
