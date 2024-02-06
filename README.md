@@ -1,5 +1,6 @@
 Generate audio file for a guided visualization of a freedive.
-
+## Dependency
+ImageMagick
 ## Install
 ```
 pip install git+https://github.com/djaney/imagine-freediving.git

@@ -6,8 +6,8 @@ import tempfile
 import argparse
 
 THEME = {
-    "bg": [0, 0, 0],
-    "color1": [100, 100, 100],
+    "bg": [0, 71, 201],
+    "overlay": [225, 225, 225],
 }
 
 def main():

@@ -1,4 +1,4 @@
-from moviepy.editor import VideoClip, ColorClip, CompositeVideoClip
+from moviepy.editor import VideoClip, ColorClip, CompositeVideoClip, TextClip
 from PIL import Image, ImageDraw
 from moviepy.video.io.bindings import PIL_to_npimage
 import numpy as np
@@ -8,22 +8,39 @@ def generate_video(size, x_points, y_points, annotations, theme, fps):
     duration = x_points[-1]
     background_clip = ColorClip(size, duration=duration, color=theme['bg'])
 
-    seek_base_clip = ColorClip(size, duration=duration, color=theme['color1'])
-    seek_clip = ColorClip(size, duration=duration, color=theme['color1'])
+    # seek_base_clip = ColorClip(size, duration=duration, color=theme['overlay'])
+    seek_clip = ColorClip(size, duration=duration, color=theme['overlay'])
 
-    graph = GraphMaker(x_points, y_points, size, theme, fps)
-    seek_mask = VideoClip(graph.make_seek_mask, duration=duration, ismask=True)
-    seek_base_mask = VideoClip(graph.make_seek_base_mask, duration=duration, ismask=True)
+    # overlay
+    w, h = size
+    oh = int(h*0.25)
+    # height is 1/4 of screen
+    overlay_maker = OverlayMaker(x_points, y_points, (w, oh), theme, fps)
+    seek_mask = VideoClip(overlay_maker.make_seek_mask, duration=duration, ismask=True)
+    # seek_base_mask = VideoClip(graph.make_seek_base_mask, duration=duration, ismask=True)
+    overlay_clip = CompositeVideoClip([
+        # seek_base_clip.set_mask(seek_base_mask),
+        seek_clip.set_mask(seek_mask),
+    ])
+    # adjust position based on size
+    overlay_clip = overlay_clip.set_position((0, h-oh))
 
     main_clip = CompositeVideoClip([
         background_clip,
-        seek_base_clip.set_mask(seek_base_mask),
-        seek_clip.set_mask(seek_mask),
+        overlay_clip,
     ])
+
+    for text, (t, f) in annotations:
+        txt = TextClip(text, color="white", fontsize=30, font="Arial")
+        txt = txt.set_position(("center", "center")).set_duration(1).set_start(t)
+        main_clip = CompositeVideoClip([
+            main_clip, txt
+        ])
+
     return main_clip
 
 
-class GraphMaker(object):
+class OverlayMaker(object):
     def __init__(self, x_points, y_points, size, theme, fps):
         self.size = size
 
@@ -47,11 +64,11 @@ class GraphMaker(object):
         return self.make(t, seek_mask=False)
 
     def make(self, t, seek_mask=False):
-        img = Image.new("I", self.size, 0)
+        img = Image.new("1", self.size, 0)
         c = ImageDraw.Draw(img)
         seek = int((t / self.duration) * self.data_count)
         kwargs = {
-            "fill": 100 if seek_mask else 200,
+            "fill": 1,
             "outline": 0,
             "width": 0
         }
