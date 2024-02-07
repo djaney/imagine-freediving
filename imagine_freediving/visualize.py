@@ -1,7 +1,7 @@
 from freediving import Dive
-from moviepy.editor import VideoFileClip, AudioFileClip, ColorClip, CompositeVideoClip
-from imagine_freediving.audio import generate_audio
-from imagine_freediving.video import generate_video
+from moviepy.editor import VideoFileClip, AudioFileClip, ColorClip, CompositeVideoClip, concatenate_videoclips
+from imagine_freediving.audio import generate_audio_annotations
+from imagine_freediving.video import generate_dive_video, generate_rest_video
 import tempfile
 import argparse
 
@@ -21,6 +21,8 @@ def main():
     parser.add_argument('--freefall', type=float, help="Depth to freefall")
     parser.add_argument('--float', type=float, help="Depth to let neutral buoyancy take over")
     parser.add_argument('--fps', type=int, default=24, help="frames per second")
+    parser.add_argument('--reps', type=int, default=1, help="Workout reps")
+    parser.add_argument('--rest', type=int, help="Seconds of rest")
     args = parser.parse_args()
 
     if args.filename[-4:] == ".mp4":
@@ -29,6 +31,9 @@ def main():
         video = False
     else:
         raise Exception("invalid filename")
+
+    if args.rest is not None and args.rest < 15:
+        raise Exception("rest cannot be less than 10 seconds")
 
     # Generate dive
     if args.generate:
@@ -45,32 +50,55 @@ def main():
     if args.float:
         dive.annotate_by_meters(args.float, "float", ascend=True)
     dive.annotate_by_meters(0, "breathe", ascend=True)
-    dive.peak_to_annotation("grab tag and turn")
+    dive.peak_to_annotation("touch down")
     x_points, y_points, annotations = dive.get_plot_data()
 
+    rest_annotations = [
+        ("relax", 0),
+        ("10 seconds", args.rest-10),
+        ("5 seconds", args.rest-5),
+    ]
+
     with tempfile.TemporaryDirectory() as tmp_dir:
-        video_path = f"{tmp_dir}/video.mp4"
-        audio_path = f"{tmp_dir}/audio.mp3"
+        dive_audio_path = f"{tmp_dir}/dive.audio.mp3"
+        rest_audio_path = f"{tmp_dir}/rest.audio.mp3"
         if video:
             # This green color should not be visible if video is properly filled at the end
-            background_color = [100, 255, 100]
             # create sound files
-            audio_duration = generate_audio(tmp_dir, audio_path, annotations)
+            audio_duration = generate_audio_annotations(tmp_dir, dive_audio_path, annotations)
+            dive_audio = AudioFileClip(dive_audio_path)
+            if args.rest is not None:
+                rest_annotations = [
+                    ("relax", 0),
+                    ("10 seconds", args.rest - 10),
+                    ("5 seconds", args.rest - 5),
+                ]
+                generate_audio_annotations(tmp_dir, rest_audio_path, rest_annotations)
+                rest_audio = AudioFileClip(rest_audio_path)
+                rest_video = generate_rest_video(args.size, args.rest, rest_annotations, THEME)
+                rest_video = rest_video.set_audio(rest_audio)
+            # build dive video
+            dive_video = generate_dive_video(args.size, x_points, y_points, annotations, THEME, args.fps)
+            # freeze if audio is longer
+            extra_duration = audio_duration - dive_video.duration
+            if extra_duration > 0:
+                frozen = dive_video.rep_video(dive_video.duration).set_duration(extra_duration)
+                dive_video = CompositeVideoClip([dive_video, frozen])
 
+            dive_video = dive_video.set_audio(dive_audio)
             # generate video
-            generated_video_clip = generate_video(args.size, x_points, y_points, annotations, THEME, args.fps)
+            video_segments = []
+            for i in range(args.reps):
+                # rest video
+                if args.rest is not None:
+                    video_segments.append(rest_video)
 
-            video = CompositeVideoClip([
-                # Background clip with correct duration
-                ColorClip(args.size, duration=audio_duration, color=background_color),
-                generated_video_clip,
-            ])
-            audio = AudioFileClip(audio_path)
-            video = video.set_audio(audio)
-            video.write_videofile(args.filename, fps=args.fps)
+                video_segments.append(dive_video)
+            main_video = concatenate_videoclips(video_segments)
+            main_video.write_videofile(args.filename, fps=args.fps)
         else:
             # create sound files
-            generate_audio(tmp_dir, args.filename, annotations)
+            generate_audio_annotations(tmp_dir, args.filename, annotations)
 
 
 if __name__ == "__main__":

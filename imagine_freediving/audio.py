@@ -3,9 +3,9 @@ from gtts import gTTS
 import os
 
 
-def generate_audio(tmp_dir, output_path, annotations):
+def generate_audio_annotations(tmp_dir, output_path, annotations):
     audio_segments = {}
-    for text, (x, y) in annotations:
+    for text, _ in annotations:
         file_path = f"{tmp_dir}/seg.{text}.mp3"
         if not os.path.isfile(file_path):
             gtts = gTTS(text=text, lang='en', slow=False)
@@ -15,7 +15,11 @@ def generate_audio(tmp_dir, output_path, annotations):
     main_audio = AudioSegment.empty()
 
     current_time = 0.0
-    for text, (x, y) in annotations:
+    for text, xy in annotations:
+        if type(xy) == tuple:
+            x = xy[0]
+        else:
+            x = xy
         if current_time > x:
             raise Exception(f"{text} too close")
         silent_time = x - current_time
