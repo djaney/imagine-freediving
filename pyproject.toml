@@ -12,9 +12,10 @@ gtts = "^2.5.1"
 pydub = "^0.25.1"
 moviepy = "^1.0.3"
 pillow = "^10.2.0"
+click = "^8.1.7"
 
 [tool.poetry.scripts]
-freedive-visualize = { reference = "imagine_freediving.visualize:main", type = "console" }
+freedive = { reference = "imagine_freediving.cli:main", type = "console" }
 
 
 [build-system]

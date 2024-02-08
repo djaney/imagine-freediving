@@ -10,10 +10,10 @@ def generate_dive_video(size, x_points, y_points, annotations, theme, fps):
 
     # overlay
     w, h = size
-    oh = int(h*0.25)
+    oh = int(h * 0.25)
     overlay_clip = OverlayMaker(x_points, y_points, (w, oh), theme, fps).make_clip()
     # adjust position based on size
-    overlay_clip = overlay_clip.set_position((0, h-oh))
+    overlay_clip = overlay_clip.set_position((0, h - oh))
 
     main_clip = CompositeVideoClip([
         background_clip,
@@ -27,10 +27,11 @@ def generate_dive_video(size, x_points, y_points, annotations, theme, fps):
         for text, (t, f) in annotations
     ]
     main_clip = CompositeVideoClip([
-        main_clip
-    ] + annotation_texts)
+                                       main_clip
+                                   ] + annotation_texts)
 
     return main_clip
+
 
 def generate_rest_video(size, duration, annotations, theme):
     background_clip = ColorClip(size, duration=duration, color=theme['bg'])
@@ -82,6 +83,7 @@ class OverlayMaker(object):
                 c.polygon(list(zip(x_seek, y_seek)), **kwargs)
 
             return PIL_to_npimage(img)
+
         return _make
 
     def make_seeker(self, is_base):
