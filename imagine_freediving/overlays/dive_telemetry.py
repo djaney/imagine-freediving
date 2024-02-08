@@ -5,9 +5,9 @@ import numpy as np
 
 
 class DefaultDiveTelemetryOverlay(object):
-    def __init__(self, x_points, y_points, size, theme, fps):
+    def __init__(self, x_points: list, y_points: list, size: tuple, theme: dict, fps: int, pad: tuple = (10, 10)):
         self.size = size
-        self.pad = (10, 10)
+        self.pad = pad
         self.theme = theme
         self.duration = x_points[-1]
         seeker_resolution = min(int(self.duration * fps), self.size[0])
@@ -15,7 +15,6 @@ class DefaultDiveTelemetryOverlay(object):
         self.x_points_filled = np.linspace(x_points[0], x_points[-1], seeker_resolution)
         self.y_points_interp = np.interp(self.x_points_filled, x_points, y_points) * -1
         self.data_count = len(self.x_points_filled)
-
 
         # fix scale
         max_height = np.max(self.y_points_interp)
@@ -34,13 +33,13 @@ class DefaultDiveTelemetryOverlay(object):
             "width": 0
         }
         if seek == self.data_count or is_base:
-            c.polygon(list(zip(self.x_points_filled*super_sampling, self.y_points_interp*super_sampling)), **kwargs)
+            c.polygon(list(zip(self.x_points_filled * super_sampling, self.y_points_interp * super_sampling)), **kwargs)
         elif seek > 1:
             x_seek = self.x_points_filled[:seek]
             y_seek = self.y_points_interp[:seek]
             x_seek = np.append(x_seek, x_seek[-1:])
             y_seek = np.append(y_seek, [0])
-            c.polygon(list(zip(x_seek*super_sampling, y_seek*super_sampling)), **kwargs)
+            c.polygon(list(zip(x_seek * super_sampling, y_seek * super_sampling)), **kwargs)
 
         img = img.resize(size=size, resample=Image.LANCZOS)
 
@@ -51,12 +50,13 @@ class DefaultDiveTelemetryOverlay(object):
         pad = self.pad
 
         def _make(t):
-            base = self.animate_seeker(t, (size[0]-pad[0]*2, size[1]-pad[1]*2), is_base=True)
-            seeker = self.animate_seeker(t, (size[0]-pad[0]*2, size[1]-pad[1]*2), is_base=False)
+            base = self.animate_seeker(t, (size[0] - pad[0] * 2, size[1] - pad[1] * 2), is_base=True)
+            seeker = self.animate_seeker(t, (size[0] - pad[0] * 2, size[1] - pad[1] * 2), is_base=False)
             combined = np.pad(base, (pad, pad), constant_values=0) * 0.25 + \
-                np.pad(seeker, (pad, pad), constant_values=0) * 0.25 + \
-                backdrop * 0.5
+                       np.pad(seeker, (pad, pad), constant_values=0) * 0.25 + \
+                       backdrop * 0.5
             return combined * 0.7
+
         return _make
 
     def make_seeker(self, size):
@@ -68,4 +68,3 @@ class DefaultDiveTelemetryOverlay(object):
         return CompositeVideoClip([
             self.make_seeker(self.size),
         ])
-
