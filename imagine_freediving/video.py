@@ -1,5 +1,6 @@
 from moviepy.editor import ColorClip, CompositeVideoClip, TextClip
-from imagine_freediving.overlays.dive_telemetry import LineDiveTelemetryOverlay
+from imagine_freediving.overlays.dive_telemetry import DefaultDiveTelemetryOverlay
+
 
 def generate_dive_video(size, x_points, y_points, annotations, theme, fps):
     duration = x_points[-1]
@@ -8,7 +9,7 @@ def generate_dive_video(size, x_points, y_points, annotations, theme, fps):
     # overlay
     w, h = size
     oh = int(h * 0.25)
-    overlay_clip = LineDiveTelemetryOverlay(x_points, y_points, (w, oh), theme, fps).make_clip()
+    overlay_clip = DefaultDiveTelemetryOverlay(x_points, y_points, (w, oh), theme, fps).make_clip()
     # adjust position based on size
     overlay_clip = overlay_clip.set_position((0, h - oh))
 
