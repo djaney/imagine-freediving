@@ -1,4 +1,4 @@
-from freediving import Dive
+from freediving import Dive, fit_to_session
 from moviepy.editor import AudioFileClip, CompositeVideoClip, concatenate_videoclips
 from imagine_freediving.audio import generate_audio_annotations
 from imagine_freediving.video import generate_dive_video, generate_rest_video
@@ -13,7 +13,9 @@ THEME = {
 
 @click.command()
 @click.argument("filename", type=click.Path())
-@click.argument("target_depth", type=int)
+@click.option("--fit", type=click.Path(), help="Fit file")
+@click.option("--fit_dive_number", type=int, help="Index of the dive within the fit file. First is 0")
+@click.option("--target_depth", type=int)
 @click.option('--descent', type=float, default=1.0, help="descent rate in m/s")
 @click.option('--ascent', type=float, default=1.0, help="descent rate in m/s")
 @click.option('--size', nargs=2, default=[1024, 768], type=int, help="Video size")
@@ -32,19 +34,28 @@ def visualize(**args):
         raise click.BadArgumentUsage("only mp4 is allowed")
 
     if args['rest'] is not None and args['rest'] < 15:
-        raise click.BadOptionUsage("rest cannot be less than 10 seconds")
+        raise click.BadOptionUsage("rest", "rest cannot be less than 10 seconds")
 
     # Generate dive
-    dive = Dive.generate(args['target_depth'], args['descent'], args['ascent'])
+    if args['target_depth']:
+        dive = Dive.generate(args['target_depth'], args['descent'], args['ascent'])
+    elif args['fit']:
+        if not args['fit_dive_number']:
+            raise click.BadOptionUsage("fit_dive_number", "--fit_dive_number must be defined")
+        session = fit_to_session(args['fit'])
+        dive = session.get_dive(args['fit_dive_number'])
+    else:
+        raise click.UsageError("--target_depth or --fit must be defined")
 
     dive.annotate_by_meters(0, "dive")
+
     if args['charge']:
         dive.annotate_by_meters(args['charge'], "charge")
     if args['freefall']:
         dive.annotate_by_meters(args['freefall'], "freefall")
     if args['float']:
         dive.annotate_by_meters(args['float'], "float", ascend=True)
-    dive.annotate_by_meters(0, "breathe", ascend=True)
+    dive.annotate_by_meters(1, "breathe", ascend=True)
     dive.peak_to_annotation("touch down")
     x_points, y_points, annotations = dive.get_plot_data()
 

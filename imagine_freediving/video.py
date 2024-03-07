@@ -1,17 +1,22 @@
-from moviepy.editor import ColorClip, CompositeVideoClip, TextClip
+from moviepy.editor import ColorClip, CompositeVideoClip, TextClip, VideoFileClip
 from imagine_freediving.overlays.dive_telemetry import DefaultDiveTelemetryOverlay
 
 
-def generate_dive_video(size, x_points, y_points, annotations, theme, fps):
+def generate_dive_video(size, x_points, y_points, annotations, theme, fps, background_path=None):
+    w, h = size
+
     duration = x_points[-1]
-    background_clip = ColorClip(size, duration=duration, color=theme['bg'])
+    if background_path is None:
+        background_clip = ColorClip(size, duration=duration, color=theme['bg'])
+    else:
+        background_clip = VideoFileClip(background_path, target_resolution=size)
 
     # overlay
-    w, h = size
-    oh = int(h * 0.25)
-    overlay_clip = DefaultDiveTelemetryOverlay(x_points, y_points, (w, oh), theme, fps).make_clip()
+
+    overlay_height = int(h * 0.25)
+    overlay_clip = DefaultDiveTelemetryOverlay(x_points, y_points, (w, overlay_height), theme, fps).make_clip()
     # adjust position based on size
-    overlay_clip = overlay_clip.set_position((0, h - oh))
+    overlay_clip = overlay_clip.set_position((0, h - overlay_height))
 
     main_clip = CompositeVideoClip([
         background_clip,
