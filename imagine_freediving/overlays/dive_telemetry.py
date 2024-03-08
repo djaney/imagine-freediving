@@ -1,4 +1,4 @@
-from moviepy.editor import VideoClip, ColorClip, CompositeVideoClip
+from moviepy.editor import VideoClip, ColorClip, CompositeVideoClip, TextClip
 from PIL import Image, ImageDraw
 from moviepy.video.io.bindings import PIL_to_npimage
 import numpy as np
@@ -6,6 +6,8 @@ import numpy as np
 
 class DefaultDiveTelemetryOverlay(object):
     def __init__(self, x_points: list, y_points: list, size: tuple, theme: dict, fps: int, pad: tuple = (10, 10)):
+        self.x_points = x_points
+        self.y_points = y_points
         self.size = size
         self.pad = pad
         self.theme = theme
@@ -32,14 +34,27 @@ class DefaultDiveTelemetryOverlay(object):
             "outline": 0,
             "width": 0
         }
+        x_points = None
+        y_points = None
         if seek == self.data_count or is_base:
-            c.polygon(list(zip(self.x_points_filled * super_sampling, self.y_points_interp * super_sampling)), **kwargs)
+            x_points = self.x_points_filled * super_sampling
+            y_points = self.y_points_interp * super_sampling
+
         elif seek > 1:
             x_seek = self.x_points_filled[:seek]
             y_seek = self.y_points_interp[:seek]
-            x_seek = np.append(x_seek, x_seek[-1:])
-            y_seek = np.append(y_seek, [0])
-            c.polygon(list(zip(x_seek * super_sampling, y_seek * super_sampling)), **kwargs)
+
+            x_points = x_seek * super_sampling
+            y_points = y_seek * super_sampling
+
+        if x_points is not None and y_points is not None:
+            # start
+            x_points = np.append([0], x_points)
+            y_points = np.append([0], y_points)
+            # end
+            x_points = np.append(x_points, x_points[-1:])
+            y_points = np.append(y_points, [0])
+            c.polygon(list(zip(x_points, y_points)), **kwargs) # noqa
 
         img = img.resize(size=size, resample=Image.LANCZOS)
 
@@ -55,7 +70,7 @@ class DefaultDiveTelemetryOverlay(object):
             combined = np.pad(base, (pad, pad), constant_values=0) * 0.25 + \
                        np.pad(seeker, (pad, pad), constant_values=0) * 0.25 + \
                        backdrop * 0.5
-            return combined * 0.7
+            return combined * 1
 
         return _make
 
@@ -64,7 +79,33 @@ class DefaultDiveTelemetryOverlay(object):
         seek_mask = VideoClip(self.get_animation_function(size), duration=self.duration, ismask=True)
         return seek_clip.set_mask(seek_mask)
 
+    def make_depth_indicator(self):
+        x_points = self.x_points
+        y_points = self.y_points
+        last_depth = None
+        current_depth_start = 0
+        timeline = []
+        for t, d in zip(x_points, y_points):
+            current_depth = int(d)
+            if last_depth is None or last_depth != current_depth:
+                if last_depth is not None:
+                    timeline.append((current_depth*-1, current_depth_start, t))
+                current_depth_start = t
+                last_depth = current_depth
+
+        box_size = (self.size[0] // 3, self.size[1] // 3)
+        font_size = int(box_size[1] * 0.7)
+        return [
+            TextClip(f"{depth}m", color="white", fontsize=font_size, method="caption", size=box_size)
+            .set_start(start)
+            .set_end(end)
+            .set_position((self.size[0] - box_size[0], self.size[1] - box_size[1]))
+            for depth, start, end in timeline
+        ]
+
+
+
     def make_clip(self):
         return CompositeVideoClip([
             self.make_seeker(self.size),
-        ])
+        ] + self.make_depth_indicator())

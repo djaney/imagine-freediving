@@ -11,7 +11,7 @@ freediving = { git = "git@github.com:djaney/freedive.git", tag="v0.2.0"}
 gtts = "^2.5.1"
 pydub = "^0.25.1"
 moviepy = "^1.0.3"
-pillow = "^10.2.0"
+pillow = "<10.0.0" # resize not working in modern version
 click = "^8.1.7"
 
 [tool.poetry.scripts]

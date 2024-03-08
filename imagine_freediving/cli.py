@@ -1,5 +1,6 @@
 import click
 from imagine_freediving.subcommands.visualize import visualize
+from imagine_freediving.subcommands.overlay import overlay
 
 
 @click.group()
@@ -9,6 +10,7 @@ def cli():
 
 def main():
     cli.add_command(visualize)
+    cli.add_command(overlay)
     cli()
 
 
