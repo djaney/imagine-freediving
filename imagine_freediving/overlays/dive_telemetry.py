@@ -1,4 +1,4 @@
-from moviepy.editor import VideoClip, ColorClip, CompositeVideoClip, TextClip
+from moviepy.editor import VideoClip, ColorClip, CompositeVideoClip, TextClip, ImageClip
 from PIL import Image, ImageDraw
 from moviepy.video.io.bindings import PIL_to_npimage
 import numpy as np
@@ -54,22 +54,20 @@ class DefaultDiveTelemetryOverlay(object):
             # end
             x_points = np.append(x_points, x_points[-1:])
             y_points = np.append(y_points, [0])
-            c.polygon(list(zip(x_points, y_points)), **kwargs) # noqa
+            c.polygon(list(zip(x_points, y_points)), **kwargs)  # noqa
 
         img = img.resize(size=size, resample=Image.LANCZOS)
 
         return PIL_to_npimage(img) / 255
 
     def get_animation_function(self, size):
-        backdrop = PIL_to_npimage(Image.new("F", size, 1))
         pad = self.pad
 
         def _make(t):
             base = self.animate_seeker(t, (size[0] - pad[0] * 2, size[1] - pad[1] * 2), is_base=True)
             seeker = self.animate_seeker(t, (size[0] - pad[0] * 2, size[1] - pad[1] * 2), is_base=False)
-            combined = np.pad(base, (pad, pad), constant_values=0) * 0.25 + \
-                       np.pad(seeker, (pad, pad), constant_values=0) * 0.25 + \
-                       backdrop * 0.5
+            combined = np.pad(base, (pad, pad), constant_values=0) * 0.5 + \
+                       np.pad(seeker, (pad, pad), constant_values=0) * 0.5
             return combined * 1
 
         return _make
@@ -89,7 +87,7 @@ class DefaultDiveTelemetryOverlay(object):
             current_depth = int(d)
             if last_depth is None or last_depth != current_depth:
                 if last_depth is not None:
-                    timeline.append((current_depth*-1, current_depth_start, t))
+                    timeline.append((current_depth * -1, current_depth_start, t))
                 current_depth_start = t
                 last_depth = current_depth
 
@@ -103,9 +101,11 @@ class DefaultDiveTelemetryOverlay(object):
             for depth, start, end in timeline
         ]
 
-
-
     def make_clip(self):
-        return CompositeVideoClip([
-            self.make_seeker(self.size),
-        ] + self.make_depth_indicator())
+
+        bg = ImageClip(PIL_to_npimage(Image.new("F", self.size, 1)) * 0.5, ismask=True)
+
+        return CompositeVideoClip(
+            [
+                self.make_seeker(self.size),
+            ] + self.make_depth_indicator()).set_mask(bg)
