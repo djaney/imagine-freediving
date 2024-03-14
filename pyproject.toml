@@ -7,7 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-freediving = { git = "git@github.com:djaney/freedive.git", tag="v0.2.0"}
+freediving = { git = "git@github.com:djaney/freedive.git", tag="v0.3.0"}
 gtts = "^2.5.1"
 pydub = "^0.25.1"
 moviepy = "^1.0.3"
