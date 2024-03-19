@@ -4,6 +4,7 @@ from freediving import fit_to_session
 from moviepy.editor import VideoFileClip, CompositeVideoClip
 from PIL import Image
 from imagine_freediving.overlays.dive_telemetry import DefaultDiveTelemetryOverlay
+from imagine_freediving.overlays.label import Label
 import click
 
 
@@ -15,6 +16,7 @@ import click
 @click.option("--official_top", type=click.DateTime(), default=None)
 @click.option("--official_top_start_seconds", type=int, default=0)
 @click.option("--dive_start_seconds", type=int, default=0)
+@click.option("--label", type=str, default=None)
 @click.option("--preview", type=click.Choice(['none', 'touchdown', 'start', 'end']), default='none')
 def overlay(**args):
     """
@@ -45,6 +47,7 @@ def handle_overlay(**args):
     theme = {
         "bg": [0, 71, 201],
         "overlay": [225, 225, 225],
+        "font": "Arial"
     }
 
     w, h = size = video_clip.size
@@ -54,10 +57,23 @@ def handle_overlay(**args):
     overlay_width = int(min(w, h) // 3)
     overlay_height = overlay_width // 2
     pad = overlay_width // 10
+
+    label_height = 0
+    label_pad = 0
+    label_font_size = 0
+
+    if args['label']:
+        label_font_size = 24
+        label_height = label_font_size + pad
+        label_pad = pad
+
     overlay_clip = DefaultDiveTelemetryOverlay(x_points, y_points, (overlay_width, overlay_height), theme,
                                                video_clip.fps).make_clip()
     # adjust position based on size
-    overlay_clip = overlay_clip.set_position((w - pad - overlay_width, h - overlay_height - pad))
+    overlay_clip = overlay_clip.set_position(
+        (w - pad - overlay_width,
+         h - overlay_height - pad - label_height - label_pad)
+    )
 
     if args['dive_start_seconds']:
         offset = args['dive_start_seconds']
@@ -66,10 +82,22 @@ def handle_overlay(**args):
         offset = args['official_top_start_seconds'] + ot_to_dive.total_seconds()
     overlay_clip = overlay_clip.set_start(offset)
 
-    main_clip = CompositeVideoClip([
+    clip_list = [
         video_clip,
         overlay_clip,
-    ], size=size)
+    ]
+
+    if args['label']:
+        label_clip = Label(
+            (0, h - pad - label_height),
+            (w, label_height),
+            args['label'],
+            label_font_size, theme).make_clip()
+        label_clip = label_clip.set_start(0).set_duration(video_clip.duration)
+        clip_list.append(label_clip)
+
+    main_clip = CompositeVideoClip(clip_list, size=size)
+
     if args['preview'] != 'none':
         t = 0
         if args['preview'] == 'touchdown':

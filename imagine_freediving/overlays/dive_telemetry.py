@@ -94,7 +94,7 @@ class DefaultDiveTelemetryOverlay(object):
         box_size = (self.size[0] // 3, self.size[1] // 3)
         font_size = int(box_size[1] * 0.7)
         return [
-            TextClip(f"{depth}m", color="white", fontsize=font_size, method="caption", size=box_size)
+            TextClip(f"{depth}m", font=self.theme['font'], color="white", fontsize=font_size, method="caption", size=box_size)
             .set_start(start)
             .set_end(end)
             .set_position((self.size[0] - box_size[0], self.size[1] - box_size[1]))
